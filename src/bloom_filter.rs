@@ -1,6 +1,7 @@
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hasher};
 
+#[derive(Clone)]
 struct Hash {
     state: RandomState,
 }
@@ -11,7 +12,7 @@ impl Hash {
     }
 
     fn get(&self, key: u64) -> u64 {
-        let mut hasher = state.build_hasher();
+        let mut hasher = self.state.build_hasher();
         hasher.write_u64(key);
         hasher.finish()
     }
@@ -23,28 +24,36 @@ pub struct BloomFilter {
 }
 
 impl BloomFilter {
-    pub fn new(k: u32, m: u32) -> BloomFilter {
+    pub fn new(k: u64, m: u64) -> BloomFilter {
         BloomFilter {
-            hashes: vec![Hash::new(); k],
-            filter: vec![false; m],
+            hashes: vec![Hash::new(); k as usize],
+            filter: vec![false; m as usize],
         }
     }
 
     pub fn maybe_exist(&self, s: &str) -> bool {
         self.hashes.iter().all({
-            |h|
-                filter[h.get(str_to_u64(s))] == true
+            |h| {
+                *self.filter.get(self.convert_to_index(h.get(BloomFilter::str_to_u64(s))) as
+                    usize).unwrap() == true
+            }
         })
     }
 
-    pub fn str_to_u64(s: &str) -> u64 {
-        s.chars().map({ |c| c.to_digit(10).unwrap() }).sum()
+    pub fn add(&mut self, s: &str) {
+        for hash in &self.hashes {
+            let index = &self.convert_to_index(hash.get(BloomFilter::str_to_u64(s)));
+            self.filter[*index as usize] =
+                true;
+        }
     }
 
-    pub fn add(&self, s: &str) {
-        for hash in self.hashes {
-            filter[convert_to_index(hash.get(self.str_to_u64(s)))] = true;
-        }
+    fn str_to_u64(s: &str) -> u64 {
+        s.chars().map({ |c| c as u64 }).sum::<u64>()
+    }
+
+    fn convert_to_index(&self, n: u64) -> u64 {
+        n % self.filter.len() as u64
     }
 }
 
@@ -55,20 +64,27 @@ mod tests {
     #[test]
     fn bloom_filter() {
         let dict = vec![
-            "Archidiskodon",
-            "Pareioplitae",
-            "Troezenian",
-            "dauber",
-            "hydroselenuret",
-            "impishly",
-            "mobocratical",
-            "photechy",
-            "stophound",
-            "telacoustic"];
-        let w0 = "dauber";
+            "Hochelaga",
+            "anthropologist",
+            "archantagonist",
+            "assenting",
+            "costectomy",
+            "isleted",
+            "raash",
+            "repossession",
+            "toffing",
+            "uncriticising",
+        ];
+        let w0 = "costectomy";
         let w1 = "foo";
 
-        assert!(maybeExist(w0));
-        assert!(!maybeExist(w1));
+        let mut bloom_filter = BloomFilter::new(3, 30);
+        for w in dict {
+            bloom_filter.add(w);
+        }
+        println!("{:?}", bloom_filter.filter);
+
+        assert!(bloom_filter.maybe_exist(w0));
+        assert!(!bloom_filter.maybe_exist(w1));
     }
 }
