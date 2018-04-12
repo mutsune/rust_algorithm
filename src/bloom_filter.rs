@@ -23,8 +23,18 @@ pub struct BloomFilter {
     filter: Vec<bool>,
 }
 
+pub enum Param {
+    Prob(f64),
+    NumOfHash(u64),
+}
+
 impl BloomFilter {
-    pub fn new(k: u64, m: u64) -> BloomFilter {
+    pub fn new(param: Param, m: u64) -> BloomFilter {
+        let k = match param {
+            Param::NumOfHash(value) => value,
+            Param::Prob(value) => f64::round(-f64::log2(value)) as u64,
+        };
+        println!("k: {}", k);
         BloomFilter {
             hashes: vec![Hash::new(); k as usize],
             filter: vec![false; m as usize],
@@ -62,7 +72,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bloom_filter() {
+    fn bloom_filter_with_k() {
         let dict = vec![
             "Hochelaga",
             "anthropologist",
@@ -78,7 +88,34 @@ mod tests {
         let w0 = "costectomy";
         let w1 = "foo";
 
-        let mut bloom_filter = BloomFilter::new(3, 30);
+        let mut bloom_filter = BloomFilter::new(Param::NumOfHash(5), 50);
+        for w in dict {
+            bloom_filter.add(w);
+        }
+        println!("{:?}", bloom_filter.filter);
+
+        assert!(bloom_filter.maybe_exist(w0));
+        assert!(!bloom_filter.maybe_exist(w1));
+    }
+
+    #[test]
+    fn bloom_filter_without_k() {
+        let dict = vec![
+            "Hochelaga",
+            "anthropologist",
+            "archantagonist",
+            "assenting",
+            "costectomy",
+            "isleted",
+            "raash",
+            "repossession",
+            "toffing",
+            "uncriticising",
+        ];
+        let w0 = "costectomy";
+        let w1 = "foo";
+
+        let mut bloom_filter = BloomFilter::new(Param::Prob(0.01), 50);
         for w in dict {
             bloom_filter.add(w);
         }
