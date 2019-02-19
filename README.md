@@ -4,4 +4,4 @@ Implementations of algorithms written by Rust. (A main purpose is to learn algor
 
 ## List
 
-- [Bloom Filter](https://github.com/mutsune/rust_algorithm/blob/master/src/bloom_filter.rs)
+-    [Bloom Filter](https://github.com/mutsune/rust_algorithm/blob/master/src/bloom_filter.rs)
